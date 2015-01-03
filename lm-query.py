@@ -76,7 +76,7 @@ def log_prob_calc(curr_word, order, curr_history):
             log_prob = mylm.probabilities[curr_word][order][curr_history]
         else:
             # recursion
-            log_prob = mylm.backoff[curr_word_2][order][curr_history_2] * log_prob_calc(curr_word, order,
+            log_prob = mylm.backoff[curr_word_2][order][curr_history_2] + log_prob_calc(curr_word, order,
                                                                                         curr_history[1:])
     # the fake.arpa holds -100 as dummy value for log(0), however some implementations use -99. accounting for both
     elif mylm.probabilities[curr_word][order][curr_history] == -100.0 or mylm.probabilities[curr_word][order][
