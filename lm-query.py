@@ -3,7 +3,6 @@
 
 '''Note to Tuur: I have also changed the ordering of the keys in the probability dictionaries, so that it goes: word, order, history, probability'''
 '''I  also changed the keys in the self.gramcounts dictionary to integers'''
-'''Note to Jonathan - Welcome! Glad to have you on the project. I hope you can decipher the code, just ask with any questions. Kristy :)'''
 
 import sys, re
 from collections import defaultdict
@@ -57,6 +56,36 @@ class Languagemodel:
     def __str__(self):
         self.probabilities.keys()
 
+
+def log_prob_calc(curr_word, order, curr_history):
+    if mylm.probabilities[curr_word][order].get(curr_history, False) == False:
+        curr_word_2 = curr_history[-1]
+        curr_history_2 = curr_history[1:-1]
+        order -= 1
+        # TODO should i check for <= 2 or == 2?
+        # ends recursion
+        if order == 2 and len(curr_history) == 1:
+            # TODO check if curr_history[1:-1] would not break but evaluate to []
+            curr_history_2 = []
+            log_prob = mylm.backoff[curr_word_2][order][curr_history_2] * mylm.probabilities[curr_word][order][
+                curr_history_2]
+        else:
+            pass
+        # TODO None check for curr_hist[1:-1] ?
+        if mylm.probabilities[curr_word_2][order].get(curr_history_2, False) == False:
+            log_prob = mylm.probabilities[curr_word][order][curr_history]
+        else:
+            # recursion
+            log_prob = mylm.backoff[curr_word_2][order][curr_history_2] * log_prob_calc(curr_word, order,
+                                                                                        curr_history[1:])
+    # the fake.arpa holds -100 as dummy value for log(0), however some implementations use -99. accounting for both
+    elif mylm.probabilities[curr_word][order][curr_history] == -100.0 or mylm.probabilities[curr_word][order][
+        curr_history] == -99.0:
+        log_prob = 0
+    else:
+        log_prob = mylm.probabilities[curr_word][order][curr_history]
+    return log_prob
+
 def main():
     '''Get files from standardinput'''
     arpa_file = sys.argv[1]
@@ -86,20 +115,25 @@ def main():
             '''Note: There is no smoothing/backoff yet applied, and absolutely no formulas the following code merely prints the highest order probability available for the word'''
             #TODO: Learn about the ARPA file format and apply backoff probabilities / deal with the backoff in an intelligent way
 
-            while mylm.probabilities[curr_word][order].get(curr_history, False) == False and order > 0 : #true if entry for history doesn't exist and order allows us to back off
-                order -=1; curr_history = curr_history[1:] #go from eg bigram to unigram,
+            # while mylm.probabilities[curr_word][order].get(curr_history, False) == False and order > 0 :
+            # #true if entry for history doesn't exist and order allows us to back off
+            #     order -=1; curr_history = curr_history[1:]
+            #     # go from eg bigram to unigram,
+            # highestprob = mylm.probabilities[curr_word][order][curr_history]
+            # print("The highest order probability (order {}) found for the word {} is {}".format(order, ''.join(curr_history)+' '+curr_word, highestprob))
 
-            highestprob = mylm.probabilities[curr_word][order][curr_history]
+            log_prob = log_prob_calc(curr_word, order, curr_history)
+            print("The calculated probability for the word", curr_word, "is", log_prob)
 
-            print("The highest order probability (order {}) found for the word {} is {}".format(order, ''.join(curr_history)+' '+curr_word, highestprob))
-
-            #TODO: MOST IMPORTANT:
             '''
-            Think about the backoff being applied. The ARPA files give backoff probabilities already,\
-            these are stored in self.backoff but not yet used. Also there is an interpolation formula we should apply,\
-             I think we should let the user have information about this. Someone needs to become an expert in this and \
-             apply it properly.
-             Below more trivial tasks:
+             backoff formula to be used:
+             p(wd3|wd1,wd2)= if(trigram exists)           p_3(wd1,wd2,wd3)
+                             else if(bigram w1,w2 exists) bo_wt_2(w1,w2)*p(wd3|wd2)
+                             else                         p(wd3|w2)
+
+             p(wd2|wd1)= if(bigram exists) p_2(wd1,wd2)
+                         else              bo_wt_1(wd1)*p_1(wd2)
+
             '''
 
 
