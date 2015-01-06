@@ -116,6 +116,7 @@ def main():
     sum = 0
     oov = 0
     for line in input_text:
+        # resetting sum and oov variables to 0 for each line
         sum = 0
         oov = 0
         line = "<s> {} </s>".format(line.rstrip('\n.'))
@@ -162,10 +163,15 @@ def main():
             sum += log_prob
             if curr_word == '<unk>':
                 oov += 1
+                # instead of printing the <unk> tag, we need to print the original word
                 curr_word = real_words[i]
             print("{}=0 {} {} ".format(curr_word, order, log_prob), end='')
         print("Total:", sum, "OOV:", oov)
+
+        # list of all words, needed for the computation of overall perplexity (as we need the number of tokens in the
+        #  testfile)
         all_words += words
+        # sum of all log_probs
         all_probs += sum
 
     # TODO find out if formula used for ppl computation is correct, does n contain the <s>/</s> tags?
