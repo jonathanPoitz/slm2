@@ -170,7 +170,7 @@ def main():
 
         # list of all words, needed for the computation of overall perplexity (as we need the number of tokens in the
         #  testfile)
-        all_words += words
+        all_words += [word for word in words if word != "<s>"]
         # sum of all log_probs
         all_probs += sum
 
