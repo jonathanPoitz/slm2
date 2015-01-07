@@ -8,6 +8,7 @@ order, history, probability'''
 
 import sys, re
 from collections import defaultdict
+import math
 
 
 class Languagemodel:
@@ -127,7 +128,7 @@ def main():
         # removed lower() b/c kenlm doesn't either
         real_words = words
         words = ["<unk>" if word not in mylm.seenwords else word for word in words]  # TODO:Is this the standard UNK
-        # text or should we grab it from the specific arpa file?
+        # text or should we gsudo apt-get install python3rab it from the specific arpa file?
 
         '''For each word, find the optimal history, and output the first column's probability for this existing
         history'''
@@ -165,19 +166,21 @@ def main():
                 oov += 1
                 # instead of printing the <unk> tag, we need to print the original word
                 curr_word = real_words[i]
+            
             print("{}=0 {} {} ".format(curr_word, order, log_prob), end='')
         print("Total:", sum, "OOV:", oov)
 
         # list of all words, needed for the computation of overall perplexity (as we need the number of tokens in the
         #  testfile)
-        all_words += [word for word in words if word != "<s>"]
+        all_words += set([word for word in words if not( word in  ["<s>", "<unk>"])])
         # sum of all log_probs
         all_probs += sum
 
     # TODO find out if formula used for ppl computation is correct, does n contain the <s>/</s> tags?
-    ppl_oov = 10 ** ((-1 * all_probs) / len(all_words))
+    ppl_oov = 10 ** ((-1.0 * all_probs) / len(all_words))
     ppl_wo_oov = 0
     print("Perplexity including OOVs:", ppl_oov)
+
 
     '''
      backoff formula to be used:
