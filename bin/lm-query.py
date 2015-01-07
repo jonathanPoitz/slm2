@@ -1,14 +1,14 @@
-#! #something here
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
 '''Script that reads probabilities from an ARPA file and returns probabilities for words and sentences, a la KenLM by
 Kristy, Tuur and Jonathan'''
 
-'''Note to Tuur: I have also changed the ordering of the keys in the probability dictionaries, so that it goes: word,
-order, history, probability'''
-'''I  also changed the keys in the self.gramcounts dictionary to integers'''
+'''Note: the ordering of the keys in the probability dictionaries goes: word,
+order, history, probability, the keys in the self.gramcounts dictionary are integers'''
 
 import sys, re
 from collections import defaultdict
-
+import argparse
 
 class Languagemodel:
     '''Language Model object as read from an ARPA file, with words and history in dictionaries by:  word,
@@ -17,7 +17,6 @@ class Languagemodel:
     def __init__(self, af):
         '''Construct a language model from given ARPA file'''
         self.probabilities = defaultdict(lambda: defaultdict(dict))  # probabilities listed in first col in ARPA file
-        # self.probabilities = dict(dict(dict())) #probabilities listed in first col in ARPA file
         self.backoff = defaultdict(lambda: defaultdict(dict))  # probabilities listed in last col in ARPA file
         self.gramcounts = {}  # count of how many 1-grams, 2-grams etc
         self.seenwords = set()  # set of seen words, anything else gets <UNK> at testing
@@ -70,7 +69,6 @@ class Languagemodel:
 def log_prob_calc(curr_word, order, curr_history):
     # TODO remove unknown entries like 'bla' that are inserted in the probabilities dict with default values when not
     # found
-
     if mylm.probabilities[curr_word][order].get(curr_history, False) == False:
         curr_word_2 = curr_history[-1]
         curr_history_2 = curr_history[1:-1]
@@ -105,35 +103,35 @@ def log_prob_calc(curr_word, order, curr_history):
 
 def main():
     '''Get files from standardinput'''
-    arpa_file = sys.argv[1]
+    parser = argparse.ArgumentParser(description="lm-query command line arguments", epilog="Please enjoy your probabilities.")
+    parser.add_argument("arpafile", type=str, help="Load an ARPA language model file")
+    parser.add_argument("--version", help="1.1")
+    cl_args = parser.parse_args()
+    arpa_file = str(cl_args.arpafile)
     print("Reading", str(arpa_file))
-    # #input_text = open(sys.argv[3], 'r')  #TODO: Uncomment this when it comes from the command line,
-    # currently using some testfile 'text.txt'
-    input_text = open('text.txt', 'r')  # TODO: Delete this when unused
+    if not sys.stdin.isatty():
+        input_text = sys.stdin.readlines()
+    else:
+        print("No sentences provided as input", file=sys.stderr)
+    #input_text = open(sys.argv[3], 'r')  #deprecated, now using argparser
+    ###input_text = open('text.txt', 'r')  # deprecated, now using command line
 
     '''Train the language model on the ARPA file and get global information'''
     global mylm
-    mylm = Languagemodel(
-        arpa_file)  # '''the LM now also captures the longest ngram in the arpa file as self.highestorder'''
-    all_words = []
-    all_probs = 0.0
-    sum = 0
-    oov = 0
-    all_oov = 0
-    all_probs_wo_oov = 0
+    mylm = Languagemodel( arpa_file)
+    all_words = []; all_probs = 0.0
+    sum = 0; oov = 0
+    all_oov = 0; all_probs_wo_oov = 0
     for line in input_text:
         # resetting sum and oov variables to 0 for each line
-        sum = 0
-        oov = 0
-        line = "<s> {} </s>".format(line.rstrip('\n.'))
+        sum, oov = 0 , 0
+        line = line.strip('\r\n.')
+        line = "<s> {} </s>".format(line)
         # print("Now considering sentence:", line)
-        words = line.split(
-            ' ')  # TODO: Incorporate Jon's tokenizer (already lowercase from Python) on the input text to match
-        # training
+        words = line.split(' ')
         # removed lower() b/c kenlm doesn't either
         real_words = words
-        words = ["<unk>" if word not in mylm.seenwords else word for word in words]  # TODO:Is this the standard UNK
-        # text or should we grab it from the specific arpa file?
+        words = ["<unk>" if word not in mylm.seenwords else word for word in words]
 
         '''For each word, find the optimal history, and output the first column's probability for this existing
         history'''
@@ -148,21 +146,6 @@ def main():
             # print the thing we search for and the dictionary entries of probabilities for debugging
             # print('word: {}, history : {}, order: {}'.format(curr_word, curr_history, order))
             # print("all probs for word",curr_word, mylm.probabilities[curr_word])
-
-            '''Note: There is no smoothing/backoff yet applied, and absolutely no formulas the following code merely
-            prints the highest order probability available for the word'''
-            # TODO: Learn about the ARPA file format and apply backoff probabilities / deal with the backoff in an
-            # intelligent way
-
-            #while mylm.probabilities[curr_word][order].get(curr_history, False) == False and order > 0:
-            # calculating the highest order that was found in the lm
-            #    order -= 1
-            #    curr_history = curr_history[1:]
-
-            #     # go from eg bigram to unigram,
-            # highestprob = mylm.probabilities[curr_word][order][curr_history]
-            # print("The highest order probability (order {}) found for the word {} is {}".format(order,
-            # ''.join(curr_history)+' '+curr_word, highestprob))
 
             order, log_prob = log_prob_calc(curr_word, order, curr_history)
             if log_prob == 0:
@@ -192,13 +175,6 @@ def main():
     print("OOVs:", all_oov, sep="\t")
     print("Tokens:", len(all_words), sep="\t")
 
-    #TODO: Count of Tokens
-
-    #TODO: Put everything into the same format as KENLM output, including error output
-    #TODO: Do all the pretty stuff like --help, --version etc, write a readme, include our names as authors
-    #TODO: Put appropriate information in shebang (probably just about UTF-8
-
-    #TODO: Put in /bin file, make a nice folder etc
 
 if __name__ == "__main__":
     main()

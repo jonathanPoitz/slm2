@@ -1,0 +1,5 @@
+Reading src/fake_2.arpa
+bla=0 2 -0.5879 wood=0 2 -0.5879 pittsburgh=0 1 -2.8905 cindy=0 1 -2.1973 jean=0 2 -0.5879 </s>=0 2 -1.2809 Total: -8.1324 OOV: 2
+jean=0 1 -2.3148 </s>=0 2 -1.2809 Total: -3.5957 OOV: 0
+OOVs:	2
+Tokens:	8
