@@ -8,7 +8,6 @@ order, history, probability'''
 
 import sys, re
 from collections import defaultdict
-import math
 
 
 class Languagemodel:
@@ -71,6 +70,7 @@ class Languagemodel:
 def log_prob_calc(curr_word, order, curr_history):
     # TODO remove unknown entries like 'bla' that are inserted in the probabilities dict with default values when not
     # found
+
     if mylm.probabilities[curr_word][order].get(curr_history, False) == False:
         curr_word_2 = curr_history[-1]
         curr_history_2 = curr_history[1:-1]
@@ -80,12 +80,15 @@ def log_prob_calc(curr_word, order, curr_history):
         if order == 2 and len(curr_history) == 1:
             # TODO check if curr_history[1:-1] would not break but evaluate to []
             curr_history_2 = []
+            
             log_prob = mylm.backoff[curr_word_2][order][curr_history_2] * mylm.probabilities[curr_word][order][
                 curr_history_2]
         else:
             pass
         # TODO None check for curr_hist[1:-1] ?
+        
         if mylm.probabilities[curr_word_2][order].get(curr_history_2, False) == False:
+            
             log_prob = mylm.probabilities[curr_word][order][curr_history]
         else:
             # recursion
@@ -95,7 +98,7 @@ def log_prob_calc(curr_word, order, curr_history):
     elif mylm.probabilities[curr_word][order][curr_history] == -100.0 or mylm.probabilities[curr_word][order][
         curr_history] == -99.0:
         log_prob = 0.0
-    else:
+    else:        
         log_prob = mylm.probabilities[curr_word][order][curr_history]
     return log_prob
 
@@ -128,12 +131,13 @@ def main():
         # removed lower() b/c kenlm doesn't either
         real_words = words
         words = ["<unk>" if word not in mylm.seenwords else word for word in words]  # TODO:Is this the standard UNK
-        # text or should we gsudo apt-get install python3rab it from the specific arpa file?
+        # text or should we grab it from the specific arpa file?
 
         '''For each word, find the optimal history, and output the first column's probability for this existing
         history'''
         for i in range(len(words)):
             all_history, curr_word = words[:i], words[i]
+            #print (all_history, curr_word,'\n')
             curr_history = tuple(all_history[- min(mylm.highestorder - 1, len(
                 all_history)):])  # take the longest ngram from arpa file or if too long then the longest available
             # history
@@ -148,10 +152,10 @@ def main():
             # TODO: Learn about the ARPA file format and apply backoff probabilities / deal with the backoff in an
             # intelligent way
 
-            while mylm.probabilities[curr_word][order].get(curr_history, False) == False and order > 0:
+            #while mylm.probabilities[curr_word][order].get(curr_history, False) == False and order > 0:
                 # calculating the highest order that was found in the lm
-                order -= 1
-                curr_history = curr_history[1:]
+            #    order -= 1
+            #    curr_history = curr_history[1:]
 
             #     # go from eg bigram to unigram,
             # highestprob = mylm.probabilities[curr_word][order][curr_history]
@@ -172,12 +176,12 @@ def main():
 
         # list of all words, needed for the computation of overall perplexity (as we need the number of tokens in the
         #  testfile)
-        all_words += set([word for word in words if not( word in  ["<s>", "<unk>"])])
+        all_words += [word for word in words if word !="<s>"]
         # sum of all log_probs
         all_probs += sum
 
     # TODO find out if formula used for ppl computation is correct, does n contain the <s>/</s> tags?
-    ppl_oov = 10 ** ((-1.0 * all_probs) / len(all_words))
+    ppl_oov = 10 ** ((-1 * all_probs) / len(all_words))
     ppl_wo_oov = 0
     print("Perplexity including OOVs:", ppl_oov)
 
