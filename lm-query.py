@@ -80,27 +80,27 @@ def log_prob_calc(curr_word, order, curr_history):
         if order == 2 and len(curr_history) == 1:
             # TODO check if curr_history[1:-1] would not break but evaluate to []
             curr_history_2 = []
-            
+
             log_prob = mylm.backoff[curr_word_2][order][curr_history_2] * mylm.probabilities[curr_word][order][
                 curr_history_2]
         else:
             pass
         # TODO None check for curr_hist[1:-1] ?
-        
+
         if mylm.probabilities[curr_word_2][order].get(curr_history_2, False) == False:
-            
+
             log_prob = mylm.probabilities[curr_word][order][curr_history]
         else:
             # recursion
             log_prob = mylm.backoff[curr_word_2][order][curr_history_2] + log_prob_calc(curr_word, order,
-                                                                                        curr_history[1:])
+                                                                                        curr_history[1:])[1]
     # the fake.arpa holds -100 as dummy value for log(0), however some implementations use -99. accounting for both
     elif mylm.probabilities[curr_word][order][curr_history] == -100.0 or mylm.probabilities[curr_word][order][
         curr_history] == -99.0:
         log_prob = 0.0
-    else:        
+    else:
         log_prob = mylm.probabilities[curr_word][order][curr_history]
-    return log_prob
+    return order, log_prob
 
 
 def main():
@@ -119,6 +119,8 @@ def main():
     all_probs = 0.0
     sum = 0
     oov = 0
+    all_oov = 0
+    all_probs_wo_oov = 0
     for line in input_text:
         # resetting sum and oov variables to 0 for each line
         sum = 0
@@ -137,7 +139,7 @@ def main():
         history'''
         for i in range(len(words)):
             all_history, curr_word = words[:i], words[i]
-            #print (all_history, curr_word,'\n')
+            # print (all_history, curr_word,'\n')
             curr_history = tuple(all_history[- min(mylm.highestorder - 1, len(
                 all_history)):])  # take the longest ngram from arpa file or if too long then the longest available
             # history
@@ -153,7 +155,7 @@ def main():
             # intelligent way
 
             #while mylm.probabilities[curr_word][order].get(curr_history, False) == False and order > 0:
-                # calculating the highest order that was found in the lm
+            # calculating the highest order that was found in the lm
             #    order -= 1
             #    curr_history = curr_history[1:]
 
@@ -162,7 +164,7 @@ def main():
             # print("The highest order probability (order {}) found for the word {} is {}".format(order,
             # ''.join(curr_history)+' '+curr_word, highestprob))
 
-            log_prob = log_prob_calc(curr_word, order, curr_history)
+            order, log_prob = log_prob_calc(curr_word, order, curr_history)
             if log_prob == 0:
                 continue
             sum += log_prob
@@ -170,36 +172,26 @@ def main():
                 oov += 1
                 # instead of printing the <unk> tag, we need to print the original word
                 curr_word = real_words[i]
-            
+            else:
+                # this takes care of summing up all probabilities that don't originate from an unknown word
+                all_probs_wo_oov += log_prob
+
             print("{}=0 {} {} ".format(curr_word, order, log_prob), end='')
         print("Total:", sum, "OOV:", oov)
 
-        # list of all words, needed for the computation of overall perplexity (as we need the number of tokens in the
-        #  testfile)
-        all_words += [word for word in words if word !="<s>"]
+        all_words += [word for word in words if word != "<s>"]
         # sum of all log_probs
         all_probs += sum
+        all_oov += oov
 
-    # TODO find out if formula used for ppl computation is correct, does n contain the <s>/</s> tags?
     ppl_oov = 10 ** ((-1 * all_probs) / len(all_words))
-    ppl_wo_oov = 0
-    print("Perplexity including OOVs:", ppl_oov)
+    all_words_wo_oov = [word for word in all_words if word != "<unk>"]
+    ppl_wo_oov = 10 ** ((-1 * all_probs_wo_oov) / len(all_words_wo_oov))
+    print("Perplexity including OOVs:", ppl_oov, "Perplexity excluding OOVs:", ppl_wo_oov, "\n", file=sys.stderr)
 
+    print("OOVs:", all_oov, sep="\t")
+    print("Tokens:", len(all_words), sep="\t")
 
-    '''
-     backoff formula to be used:
-     p(wd3|wd1,wd2)= if(trigram exists)           p_3(wd1,wd2,wd3)
-                     else if(bigram w1,w2 exists) bo_wt_2(w1,w2)*p(wd3|wd2)
-                     else                         p(wd3|w2)
-
-     p(wd2|wd1)= if(bigram exists) p_2(wd1,wd2)
-                 else              bo_wt_1(wd1)*p_1(wd2)
-
-    '''
-
-    # TODO: remove 0 probabilities from output
-    # TODO: Perplexity of sentence (both including and excluding OOVs)
-    #TODO: Count of OOVs
     #TODO: Count of Tokens
 
     #TODO: Put everything into the same format as KENLM output, including error output
@@ -207,9 +199,6 @@ def main():
     #TODO: Put appropriate information in shebang (probably just about UTF-8
 
     #TODO: Put in /bin file, make a nice folder etc
-
-    #TODO: Test against KenLM to see that it works
-
 
 if __name__ == "__main__":
     main()
