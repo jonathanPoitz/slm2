@@ -1,0 +1,46 @@
+*** Comparison of kenlm and our tool, no. 2 ***
+
+** test file text.txt contains:
+
+bla wood Pittsburgh cindy jean
+jean
+
+** language model fake_2.arpa contains:
+
+\data\
+ngram 1=7
+ngram 2=7
+
+\1-grams:
+-1.6094	jean	-0.4543
+-2.3026	<unk>	-0.5879
+-100	<s>	-0.7054
+-2.3026	</s>	0.0000
+-1.6094	wood	-0.5879
+-1.6094	cindy	-0.5879
+-1.6094	Pittsburgh	-0.5879
+
+
+\2-grams:
+-0.5879	<unk> wood
+-0.5879	<s> <unk>
+-0.5879	wood Pittsburgh
+-0.5879	cindy jean
+-0.5879	Pittsburgh cindy
+-1.2809	jean </s>
+-1.2809	jean wood
+
+\end\
+
+** kenlm output:
+bla=0 2 -0.5879	wood=4 2 -0.5879	Pittsburgh=6 2 -0.5879	cindy=5 2 -0.5879	jean=1 2 -0.5879	</s>=3 2 -1.2809	Total: -4.2204 OOV: 1
+jean=1 1 -2.3148	</s>=3 2 -1.2809	Total: -3.5957 OOV: 0
+Perplexity including OOVs:	9.48446
+Perplexity excluding OOVs:	10.7795
+OOVs:	1
+Tokens:	8
+
+** our output:
+bla=0 2 -0.5879 wood=0 2 -0.5879 Pittsburgh=0 2 -0.5879 cindy=0 2 -0.5879 jean=0 2 -0.5879 </s>=0 2 -1.2809 Total: -4.2204 OOV: 1
+jean=0 1 -1.6094 </s>=0 2 -1.2809 Total: -2.8903 OOV: 0
+Perplexity including OOVs: 7.741720715783498

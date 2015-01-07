@@ -1,0 +1,24 @@
+\data\
+ngram 1=7
+ngram 2=7
+
+\1-grams:
+-1.6094	jean	-0.4543
+-2.3026	<unk>	-0.5879
+-100	<s>	-0.7054
+-2.3026	</s>	0.0000
+-1.6094	wood	-0.5879
+-1.6094	cindy	-0.5879
+-1.6094	Pittsburgh	-0.5879
+
+
+\2-grams:
+-0.5879	<unk> wood
+-0.5879	<s> <unk>
+-0.5879	wood Pittsburgh
+-0.5879	cindy jean
+-0.5879	Pittsburgh cindy
+-1.2809	jean </s>
+-1.2809	jean wood
+
+\end\
