@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-'''Script that reads probabilities from an ARPA file and returns probabilities for words and sentences, a la KenLM by
-Kristy, Tuur and Jonathan'''
+# authors: Kristy James, Tuur Leeuwenberg and Jonathan Poitz
+# Script that reads probabilities from an ARPA file and returns probabilities for words and sentences, à la KenLM
 
 '''Note: the ordering of the keys in the probability dictionaries goes: word,
 order, history, probability, the keys in the self.gramcounts dictionary are integers'''
@@ -9,6 +9,7 @@ order, history, probability, the keys in the self.gramcounts dictionary are inte
 import sys, re
 from collections import defaultdict
 import argparse
+
 
 class Languagemodel:
     '''Language Model object as read from an ARPA file, with words and history in dictionaries by:  word,
@@ -103,7 +104,8 @@ def log_prob_calc(curr_word, order, curr_history):
 
 def main():
     '''Get files from standardinput'''
-    parser = argparse.ArgumentParser(description="lm-query command line arguments", epilog="Please enjoy your probabilities.")
+    parser = argparse.ArgumentParser(description="lm-query command line arguments",
+                                     epilog="Please enjoy your probabilities.")
     parser.add_argument("arpafile", type=str, help="Load an ARPA language model file")
     parser.add_argument("--version", help="1.1")
     cl_args = parser.parse_args()
@@ -112,24 +114,25 @@ def main():
     if not sys.stdin.isatty():
         input_text = sys.stdin.readlines()
     else:
-        print("No sentences provided as input", file=sys.stderr)
-    #input_text = open(sys.argv[3], 'r')  #deprecated, now using argparser
-    ###input_text = open('text.txt', 'r')  # deprecated, now using command line
+        print("error: No sentences provided from standard input", file=sys.stderr)
+        exit(-1)
+    # input_text = open(sys.argv[3], 'r')  #deprecated, now using argparser
+    # ##input_text = open('text.txt', 'r')  # deprecated, now using command line
 
     '''Train the language model on the ARPA file and get global information'''
     global mylm
-    mylm = Languagemodel( arpa_file)
-    all_words = []; all_probs = 0.0
-    sum = 0; oov = 0
-    all_oov = 0; all_probs_wo_oov = 0
+    mylm = Languagemodel(arpa_file)
+    all_words = []
+    all_probs = 0.0
+    all_oov = 0
+    all_probs_wo_oov = 0
     for line in input_text:
         # resetting sum and oov variables to 0 for each line
-        sum, oov = 0 , 0
+        probs_sum, oov = 0, 0
         line = line.strip('\r\n.')
         line = "<s> {} </s>".format(line)
         # print("Now considering sentence:", line)
         words = line.split(' ')
-        # removed lower() b/c kenlm doesn't either
         real_words = words
         words = ["<unk>" if word not in mylm.seenwords else word for word in words]
 
@@ -150,7 +153,7 @@ def main():
             order, log_prob = log_prob_calc(curr_word, order, curr_history)
             if log_prob == 0:
                 continue
-            sum += log_prob
+            probs_sum += log_prob
             if curr_word == '<unk>':
                 oov += 1
                 # instead of printing the <unk> tag, we need to print the original word
@@ -160,18 +163,16 @@ def main():
                 all_probs_wo_oov += log_prob
 
             print("{}=0 {} {} ".format(curr_word, order, log_prob), end='')
-        print("Total:", sum, "OOV:", oov)
-
+        print("Total:", probs_sum, "OOV:", oov)
         all_words += [word for word in words if word != "<s>"]
         # sum of all log_probs
-        all_probs += sum
+        all_probs += probs_sum
         all_oov += oov
 
     ppl_oov = 10 ** ((-1 * all_probs) / len(all_words))
     all_words_wo_oov = [word for word in all_words if word != "<unk>"]
     ppl_wo_oov = 10 ** ((-1 * all_probs_wo_oov) / len(all_words_wo_oov))
     print("Perplexity including OOVs:", ppl_oov, "Perplexity excluding OOVs:", ppl_wo_oov, "\n", file=sys.stderr)
-
     print("OOVs:", all_oov, sep="\t")
     print("Tokens:", len(all_words), sep="\t")
 
