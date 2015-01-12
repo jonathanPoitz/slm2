@@ -1,6 +1,6 @@
 slm2 language modelling assignment
 ====
-version 1.1 (7 Jan 2015)
+version 1.2 (13 Jan 2015)
 
 Authors
 ===
