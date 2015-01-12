@@ -170,7 +170,7 @@ def main():
 
             # if curr_word == ".":
             print("{}=0 {} {} ".format(curr_word, order, round(log_prob, 5)), end='')
-        print("Total:", probs_sum, "OOV:", oov)
+        print("Total:", round(probs_sum, 5), "OOV:", oov)
         all_words += [word for word in words if word != "<s>"]
         # sum of all log_probs
         all_probs += probs_sum
